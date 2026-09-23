@@ -1,0 +1,15 @@
+{
+  "name": "studymate-ai",
+  "version": "1.0.0",
+  "description": "StudyMate AI - Modern AI-powered study assistant for college students",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "db:push": "npm --prefix backend run prisma:push",
+    "db:seed": "npm --prefix backend run prisma:seed",
+    "db:up": "docker compose up -d"
+  }
+}

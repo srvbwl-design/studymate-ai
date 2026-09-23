@@ -1,0 +1,25 @@
+import { Request, Response, NextFunction } from 'express';
+import { ZodSchema, ZodError } from 'zod';
+
+export function validate(schema: ZodSchema) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      req.body = await schema.parseAsync(req.body);
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const issues = error.errors.map((err) => ({
+          field: err.path.join('.'),
+          message: err.message,
+        }));
+        res.status(400).json({
+          error: 'Validation failed',
+          details: issues,
+          message: issues[0]?.message || 'Invalid input data',
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+}

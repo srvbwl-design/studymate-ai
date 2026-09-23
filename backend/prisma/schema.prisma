@@ -1,0 +1,179 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  conversations Conversation[]
+  notes         Note[]
+  quizzes       Quiz[]
+  quizAttempts  QuizAttempt[]
+  studyPlans    StudyPlan[]
+  documents     Document[]
+
+  @@map("users")
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  userId    String
+  title     String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  role           String       // "user" | "assistant" | "system"
+  content        String
+  createdAt      DateTime     @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model Note {
+  id          String   @id @default(uuid())
+  userId      String
+  title       String
+  topic       String
+  difficulty  String   @default("Intermediate") // Beginner, Intermediate, Advanced
+  length      String   @default("Medium")       // Short, Medium, Detailed
+  content     String
+  tags        String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notes")
+}
+
+model Quiz {
+  id             String         @id @default(uuid())
+  userId         String
+  title          String
+  topic          String
+  difficulty     String         @default("Intermediate") // Beginner, Intermediate, Advanced
+  questionType   String         @default("MCQ")          // MCQ, True/False
+  questionsCount Int            @default(5)
+  createdAt      DateTime       @default(now())
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions      QuizQuestion[]
+  attempts       QuizAttempt[]
+
+  @@index([userId])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            String   @id @default(uuid())
+  quizId        String
+  order         Int      @default(0)
+  question      String
+  options       String[] // Array of option strings
+  correctAnswer String   // e.g. "B" or the exact matching string
+  explanation   String
+
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id             String   @id @default(uuid())
+  quizId         String
+  userId         String
+  score          Int
+  totalQuestions Int
+  userAnswers    Json     // Key-value map: { [questionId]: selectedAnswer }
+  createdAt      DateTime @default(now())
+
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@index([userId])
+  @@map("quiz_attempts")
+}
+
+model StudyPlan {
+  id               String         @id @default(uuid())
+  userId           String
+  title            String
+  subject          String
+  knowledgeLevel   String         @default("Beginner") // Beginner, Intermediate, Advanced
+  difficulty       String         @default("Intermediate")
+  dailyTimeMinutes Int            @default(120)
+  durationDays     Int            @default(7)
+  examDate         DateTime?
+  extraTopics      String?
+  progressPercent  Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  days             StudyPlanDay[]
+
+  @@index([userId])
+  @@map("study_plans")
+}
+
+model StudyPlanDay {
+  id               String    @id @default(uuid())
+  studyPlanId      String
+  dayNumber        Int
+  title            String
+  topics           String[]
+  durationMinutes  Int       @default(120)
+  learningActivity String
+  practiceActivity String
+  revisionActivity String
+  quizReview       String
+  isCompleted      Boolean   @default(false)
+
+  studyPlan        StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+
+  @@index([studyPlanId])
+  @@map("study_plan_days")
+}
+
+model Document {
+  id            String   @id @default(uuid())
+  userId        String
+  filename      String
+  originalName  String
+  mimeType      String
+  sizeBytes     Int
+  extractedText String
+  summary       String?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("documents")
+}
